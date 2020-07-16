@@ -29,16 +29,16 @@ def switch_schema(task, kwargs, **kw):
     # guarantee this module was loaded when the settings were ready.
     from .compat import get_public_schema_name
 
-    old_schema = (connection.schema_name, connection.include_public_schema)
+    old_schema = (connection.schema.schema_name, connection.include_public_schema)
     setattr(task, "_old_schema", old_schema)
 
-    schema = get_schema_name_from_task(task, kwargs) or get_public_schema_name()
+    schema = get_schema_name_from_task(task, kwargs)
 
     # If the schema has not changed, don't do anything.
-    if connection.schema_name == schema:
+    if connection.schema.schema_name == schema:
         return
 
-    if connection.schema_name != get_public_schema_name():
+    if connection.schema.schema_name != get_public_schema_name():
         connection.set_schema_to_public()
 
     if schema == get_public_schema_name():
@@ -59,7 +59,7 @@ def restore_schema(task, **kwargs):
         schema_name, include_public = task._old_schema
 
     # If the schema names match, don't do anything.
-    if connection.schema_name == schema_name:
+    if connection.schema.schema_name == schema_name:
         return
 
     connection.set_schema(schema_name, include_public=include_public)
@@ -90,7 +90,7 @@ class CeleryApp(Celery):
         self._add_current_schema(kw["headers"])
 
     def _add_current_schema(self, kwds):
-        kwds["_schema_name"] = kwds.get("_schema_name", connection.schema_name)
+        kwds["_schema_name"] = kwds.get("_schema_name", connection.schema.schema_name)
 
     def send_task(self, name, args=None, kwargs=None, **options):
         if celery.VERSION[0] < 4:

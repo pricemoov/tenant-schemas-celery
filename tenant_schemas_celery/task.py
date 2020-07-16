@@ -52,7 +52,7 @@ class TenantTask(Task):
         self._add_current_schema(kw["headers"])
 
     def _add_current_schema(self, kwds):
-        kwds["_schema_name"] = kwds.get("_schema_name", connection.schema_name)
+        kwds["_schema_name"] = kwds.get("_schema_name", connection.schema.schema_name)
 
     def apply(self, args=None, kwargs=None, *arg, **kw):
         if celery.VERSION[0] < 4:

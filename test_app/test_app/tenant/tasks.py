@@ -4,7 +4,7 @@ from django.db import connection
 
 @app.task
 def print_schema():
-    print connection.schema_name
+    print connection.schema.schema_name
 
 
 @app.task
