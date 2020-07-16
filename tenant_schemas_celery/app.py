@@ -45,7 +45,7 @@ def switch_schema(task, kwargs, **kw):
         return
 
     tenant = task.get_tenant_for_schema(schema_name=schema)
-    connection.set_tenant(tenant, include_public=True)
+    connection.set_schema(tenant, include_public=True)
 
 
 def restore_schema(task, **kwargs):
