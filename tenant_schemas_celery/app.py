@@ -62,6 +62,7 @@ def restore_schema(task, **kwargs):
     if connection.schema.schema_name == schema_name:
         return
 
+    tenant = task.get_tenant_for_schema(schema_name=schema_name)
     connection.set_schema(schema_name, include_public=include_public)
 
 
