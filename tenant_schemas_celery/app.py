@@ -94,7 +94,9 @@ class CeleryApp(Celery):
         self._add_current_schema(kw["headers"])
 
     def _add_current_schema(self, kwds):
-        kwds["_schema_name"] = kwds.get("_schema_name", connection.schema.schema_name)
+        schema_name = kwds.get("_schema_name", connection.schema.schema_name)
+        kwds["_schema_name"] = schema_name
+        kwds["headers"]["_schema_name"] = schema_name
 
     def send_task(self, name, args=None, kwargs=None, **options):
         if celery.VERSION[0] < 4:
