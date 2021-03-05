@@ -96,6 +96,9 @@ class CeleryApp(Celery):
     def _add_current_schema(self, kwds):
         schema_name = kwds.get("_schema_name", connection.schema.schema_name)
         kwds["_schema_name"] = schema_name
+        
+        if "headers" not in kwds:
+            kwds["headers"] = {}
         kwds["headers"]["_schema_name"] = schema_name
 
     def send_task(self, name, args=None, kwargs=None, **options):
