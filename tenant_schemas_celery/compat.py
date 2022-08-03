@@ -7,7 +7,7 @@ def get_public_schema_name():
 
 
 class CompatibleConnection:
-    def __init__(self, connection: Any):
+    def __init__(self, connection):
         self.connection = connection
 
     @staticmethod
