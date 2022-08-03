@@ -25,7 +25,7 @@ class CompatibleConnection:
         else:
             self.connection.set_schema_to_public()
 
-    def set_schema(self: Any, schema: Any, *args, **kwargs) -> None:
+    def set_schema(self, schema, *args, **kwargs) -> None:
         if self._is_new():
             self.connection._set_schema(schema, *args, **kwargs)
         else:
