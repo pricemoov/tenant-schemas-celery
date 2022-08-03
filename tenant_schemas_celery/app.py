@@ -27,46 +27,50 @@ def switch_schema(task, kwargs, **kw):
     # Lazily load needed functions, as they import django model functions which
     # in turn load modules that need settings to be loaded and we can't
     # guarantee this module was loaded when the settings were ready.
-    from .compat import get_public_schema_name
+    from .compat import CompatibleConnection
 
-    old_schema = (connection.schema.schema_name, connection.include_public_schema)
+    compat_connection = CompatibleConnection(connection)
+    schema_name = compat_connection.get_schema().schema_name
+    public_schema_name = CompatibleConnection.get_public_schema_name()
+
+    old_schema = (schema_name, connection.include_public_schema)
     setattr(task, "_old_schema", old_schema)
 
     schema = get_schema_name_from_task(task, kwargs)
 
     # If the schema has not changed, don't do anything.
-    if connection.schema.schema_name == schema:
+    if schema_name == schema:
         return
 
-    if connection.schema.schema_name != get_public_schema_name():
-        connection.set_schema_to_public()
+    if schema_name != public_schema_name:
+        compat_connection.set_schema_to_public()
 
-    if schema == get_public_schema_name():
+    if schema == public_schema_name:
         return
 
     tenant = task.get_tenant_for_schema(schema_name=schema)
-    connection.set_schema(tenant, include_public=True)
+    compat_connection.set_schema(tenant, include_public=True)
 
 
 def restore_schema(task, **kwargs):
     """ Switches the schema back to the one from before running the task. """
-    from .compat import get_public_schema_name
+    from .compat import CompatibleConnection
 
-    schema_name = get_public_schema_name()
+    schema_name = CompatibleConnection.get_public_schema_name()
     include_public = True
-
+    compat_connection = CompatibleConnection(connection)
     if hasattr(task, "_old_schema"):
         schema_name, include_public = task._old_schema
 
     # If the schema names match, don't do anything.
-    if connection.schema.schema_name == schema_name:
+    if compat_connection.get_schema().schema_name == schema_name:
         return
 
     if schema_name != get_public_schema_name():
         tenant = task.get_tenant_for_schema(schema_name=schema_name)
-        connection.set_schema(schema_name, include_public=include_public)
+        compat_connection.set_schema(schema_name, include_public=include_public)
     else:
-        connection.set_schema_to_public()
+        compat_connection.set_schema_to_public()
 
 
 task_prerun.connect(
@@ -94,7 +98,9 @@ class CeleryApp(Celery):
         self._add_current_schema(kw["headers"])
 
     def _add_current_schema(self, kwds):
-        schema_name = kwds.get("_schema_name", connection.schema.schema_name)
+        from .compat import CompatibleConnection
+        compat_connection = CompatibleConnection(connection)
+        schema_name = kwds.get("_schema_name", compat_connection.get_schema().schema_name)
         kwds["_schema_name"] = schema_name
         
         if "headers" not in kwds:
