@@ -56,7 +56,7 @@ def restore_schema(task, **kwargs):
     """ Switches the schema back to the one from before running the task. """
     from .compat import CompatibleConnection
 
-    schema_name = CompatibleConnection.get_public_schema_name()
+    public_schema_name = CompatibleConnection.get_public_schema_name()
     compat_connection = CompatibleConnection(connection)
     if hasattr(task, "_old_schema"):
         schema_name = task._old_schema
@@ -65,9 +65,9 @@ def restore_schema(task, **kwargs):
     if compat_connection.get_schema().schema_name == schema_name:
         return
 
-    if schema_name != get_public_schema_name():
+    if schema_name != public_schema_name:
         tenant = task.get_tenant_for_schema(schema_name=schema_name)
-        compat_connection.set_schema(schema_name)
+        compat_connection.set_schema(tenant)
     else:
         compat_connection.set_schema_to_public()
 
