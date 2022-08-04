@@ -33,7 +33,7 @@ def switch_schema(task, kwargs, **kw):
     schema_name = compat_connection.get_schema().schema_name
     public_schema_name = CompatibleConnection.get_public_schema_name()
 
-    old_schema = (schema_name, connection.include_public_schema)
+    old_schema = schema_name
     setattr(task, "_old_schema", old_schema)
 
     schema = get_schema_name_from_task(task, kwargs)
@@ -49,7 +49,7 @@ def switch_schema(task, kwargs, **kw):
         return
 
     tenant = task.get_tenant_for_schema(schema_name=schema)
-    compat_connection.set_schema(tenant, include_public=True)
+    compat_connection.set_schema(tenant)
 
 
 def restore_schema(task, **kwargs):
@@ -57,10 +57,9 @@ def restore_schema(task, **kwargs):
     from .compat import CompatibleConnection
 
     schema_name = CompatibleConnection.get_public_schema_name()
-    include_public = True
     compat_connection = CompatibleConnection(connection)
     if hasattr(task, "_old_schema"):
-        schema_name, include_public = task._old_schema
+        schema_name = task._old_schema
 
     # If the schema names match, don't do anything.
     if compat_connection.get_schema().schema_name == schema_name:
@@ -68,7 +67,7 @@ def restore_schema(task, **kwargs):
 
     if schema_name != get_public_schema_name():
         tenant = task.get_tenant_for_schema(schema_name=schema_name)
-        compat_connection.set_schema(schema_name, include_public=include_public)
+        compat_connection.set_schema(schema_name)
     else:
         compat_connection.set_schema_to_public()
 
