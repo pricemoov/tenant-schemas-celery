@@ -1,3 +1,4 @@
+django-pgschemas==0.15.2
 pip-tools>=3.1.0
 pytest<5
 pytest-django>=3.4.3
