@@ -7,7 +7,7 @@ except ImportError:
     raise ImportError("celery is required to use tenant_schemas_celery")
 
 from django.db import connections
-
+from django_pgschemas import get_current_schema, activate, SchemaDescriptor
 from celery.signals import task_prerun, task_postrun
 
 
@@ -24,65 +24,28 @@ def get_schema_name_from_task(task, kwargs):
 
 def switch_schema(task, kwargs, **kw):
     """ Switches schema of the task, before it has been run. """
-    # Lazily load needed functions, as they import django model functions which
-    # in turn load modules that need settings to be loaded and we can't
-    # guarantee this module was loaded when the settings were ready.
-    from .compat import CompatibleConnection
 
-    default_compat_connection = CompatibleConnection(connections['default'])
-    schema_name = default_compat_connection.get_schema().schema_name
-    public_schema_name = CompatibleConnection.get_public_schema_name()
+    old_schema = get_current_schema().schema_name
 
-    old_schema = schema_name
     setattr(task, "_old_schema", old_schema)
-
-    for connection in connections.all():
-        if not hasattr(connection, "_schema"):
-            continue
-
-        compat_connection = CompatibleConnection(connection)
-
-        schema = get_schema_name_from_task(task, kwargs)
-
+    schema = get_schema_name_from_task(task, kwargs)
+    if old_schema == schema:
         # If the schema has not changed, don't do anything.
-        if schema_name == schema:
-            continue
+        return
+    activate(SchemaDescriptor.create(schema))
 
-        if schema_name != public_schema_name:
-            compat_connection.set_schema_to_public()
-
-        if schema == public_schema_name:
-            continue
-
-        tenant = task.get_tenant_for_schema(schema_name=schema)
-        compat_connection.set_schema(tenant)
 
 
 def restore_schema(task, **kwargs):
     """ Switches the schema back to the one from before running the task. """
-    from .compat import CompatibleConnection
-
-    public_schema_name = CompatibleConnection.get_public_schema_name()
 
     if hasattr(task, "_old_schema"):
         schema_name = task._old_schema
-
-    for connection in connections.all():
-        if not hasattr(connection, "_schema"):
-            continue
-
-        compat_connection = CompatibleConnection(connection)
-
-        # If the schema names match, don't do anything.
-        if compat_connection.get_schema().schema_name == schema_name:
-            return
-
-        if schema_name != public_schema_name:
-            tenant = task.get_tenant_for_schema(schema_name=schema_name)
-            compat_connection.set_schema(tenant)
-
-        else:
-            compat_connection.set_schema_to_public()
+    current_schema = get_current_schema()
+    if current_schema.schema_name == schema_name:
+        # If the schema has not changed, don't do anything.
+        return
+    activate(SchemaDescriptor.create(schema_name))
 
 
 
@@ -111,9 +74,8 @@ class CeleryApp(Celery):
         self._add_current_schema(kw["headers"])
 
     def _add_current_schema(self, kwds):
-        from .compat import CompatibleConnection
-        compat_connection = CompatibleConnection(connections['default'])
-        schema_name = kwds.get("_schema_name", compat_connection.get_schema().schema_name)
+
+        schema_name = kwds.get("_schema_name", get_current_schema().schema_name)
         kwds["_schema_name"] = schema_name
         
         if "headers" not in kwds:

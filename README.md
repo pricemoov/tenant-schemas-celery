@@ -1,3 +1,11 @@
+Pricemoov notice
+================
+
+this was forked from https://github.com/maciej-gol/tenant-schemas-celery .
+Since we're using django-pgschemas instead of django-tenant-schemas, we need some adaptations here to match changes in pgschemas.
+(django-pgschemas being a fork of django-tenant-schemas)
+
+
 tenant-schemas-celery 
 =====================
  [![Build Status](https://travis-ci.org/maciej-gol/tenant-schemas-celery.svg?branch=master)](https://travis-ci.org/maciej-gol/tenant-schemas-celery)

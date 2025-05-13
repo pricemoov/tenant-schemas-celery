@@ -1,9 +1,9 @@
 import celery
 from celery.app.task import Task
 from django.db import connection
+from django_pgschemas import get_current_schema
 
 from tenant_schemas_celery.cache import SimpleCache
-
 _shared_storage = {}
 
 
@@ -35,9 +35,7 @@ class TenantTask(Task):
         self._add_current_schema(kw["headers"])
 
     def _add_current_schema(self, kwds):
-        from .compat import CompatibleConnection
-        compat_connection = CompatibleConnection(connection)
-        kwds["_schema_name"] = kwds.get("_schema_name", compat_connection.get_schema().schema_name)
+        kwds["_schema_name"] = kwds.get("_schema_name", get_current_schema().schema_name)
 
     def apply(self, args=None, kwargs=None, *arg, **kw):
         if celery.VERSION[0] < 4:
