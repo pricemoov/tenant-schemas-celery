@@ -32,6 +32,6 @@ setup(
     license='MIT',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url='https://github.com/maciej-gol/tenant-schemas-celery',
+    url='https://github.com/pricemoov/tenant-schemas-celery',
     version=version,
 )
