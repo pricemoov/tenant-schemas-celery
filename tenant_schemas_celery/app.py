@@ -1,9 +1,13 @@
 from __future__ import absolute_import
 
+import logging
+
 from celery import Celery
 
 from django_pgschemas import get_current_schema, activate, SchemaDescriptor
 from celery.signals import task_prerun, task_postrun
+
+logger = logging.getLogger("tenant_schemas_celery")
 
 
 def get_schema_name_from_task(task):
@@ -19,6 +23,24 @@ def switch_schema(task, **kw):
     setattr(task, "_old_schema", old_schema)
 
     schema = get_schema_name_from_task(task)
+
+    if schema is None:
+        req = task.request
+        logger.error(
+            "Missing _schema_name header! "
+            "task=%s task_id=%s retries=%s "
+            "parent_id=%s root_id=%s "
+            "origin=%s hostname=%s "
+            "delivery_info=%s "
+            "headers=%s "
+            "is_eager=%s called_directly=%s",
+            task.name, req.id, req.retries,
+            req.parent_id, req.root_id,
+            req.origin, req.hostname,
+            req.delivery_info,
+            req.headers,
+            req.is_eager, req.called_directly,
+        )
 
     if old_schema == schema:
         # If the schema has not changed, don't do anything.
